@@ -37,6 +37,10 @@ def register():
         user_dict = dict(request.form)
         # remove keys for columns that do not exist in database:
         filtered_user_dict = {key: user_dict[key] for key in user_dict if key in dir(User)}
+        # hash user password and salt with string of given length
+        filtered_user_dict['password'] = generate_password_hash(password=filtered_user_dict['password'],
+                                                                method='pbkdf2:sha256',
+                                                                salt_length=8)
         # noinspection PyArgumentList
         created_user = User(**filtered_user_dict)
         db.session.add(created_user)
