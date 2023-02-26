@@ -19,6 +19,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(1000))
+
+
 # Line below only required once, when creating DB.
 # db.create_all()
 
@@ -61,7 +63,8 @@ def logout():
 
 @app.route('/download')
 def download():
-    pass
+    return send_from_directory("static",
+                               "files/cheat_sheet.pdf")
 
 
 if __name__ == "__main__":
