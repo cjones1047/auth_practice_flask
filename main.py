@@ -12,6 +12,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + file_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# CREATE LOGIN MANAGER
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+# callback used to load user object from user ID stored in session
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 
 # CREATE TABLE IN DB
 class User(UserMixin, db.Model):
@@ -32,7 +42,7 @@ def home():
 
 @app.route('/register', methods=["GET", "POST"])
 def register():
-    if request.form:
+    if request.method == "POST":
         # create Python dictionary from form data
         user_dict = dict(request.form)
         # remove keys for columns that do not exist in database:
@@ -45,27 +55,47 @@ def register():
         created_user = User(**filtered_user_dict)
         db.session.add(created_user)
         db.session.commit()
+
+        # log in and authenticate after adding user to db
+        login_user(created_user)
+
         return render_template("secrets.html", user=created_user)
 
     return render_template("register.html")
 
 
-@app.route('/login')
+@app.route('/login', methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        entered_email = request.form['email']
+        entered_password = request.form['password']
+
+        user = User.query.filter_by(email=entered_email).first()
+
+        # compare hashed password in database to hashed user-entered password and authenticate if identical
+        if check_password_hash(user.password, entered_password):
+            login_user(user)
+        return redirect(url_for('secrets'))
+
     return render_template("login.html")
 
 
 @app.route('/secrets')
+@login_required
 def secrets():
     return render_template("secrets.html")
 
 
 @app.route('/logout')
+@login_required
 def logout():
-    pass
+    logout_user()
+
+    return redirect(url_for('home'))
 
 
 @app.route('/download')
+@login_required
 def download():
     return send_from_directory("static",
                                "files/cheat_sheet.pdf")
