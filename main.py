@@ -72,10 +72,16 @@ def login():
 
         user = User.query.filter_by(email=entered_email).first()
 
+        if user is None:
+            flash("That email does not exist. Please try again", "error")
+            return redirect(url_for('login'))
+
         # compare hashed password in database to hashed user-entered password and authenticate if identical
         if check_password_hash(user.password, entered_password):
             login_user(user)
-        return redirect(url_for('secrets'))
+            return redirect(url_for('secrets'))
+        flash("Password incorrect. Enter valid password.", "error")
+        return redirect(url_for('login'))
 
     return render_template("login.html")
 
