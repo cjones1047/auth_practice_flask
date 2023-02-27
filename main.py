@@ -1,3 +1,4 @@
+import sqlalchemy.exc
 from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
@@ -54,7 +55,11 @@ def register():
         # noinspection PyArgumentList
         created_user = User(**filtered_user_dict)
         db.session.add(created_user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except sqlalchemy.exc.IntegrityError:
+            flash(f"Account for email {created_user.email} already exists. Log in here.", "error")
+            return redirect(url_for('login'))
 
         # log in and authenticate after adding user to db
         login_user(created_user)
